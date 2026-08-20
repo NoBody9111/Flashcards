@@ -570,6 +570,11 @@ const SEED_WORDS_RO = [
   ["Solipsism", "concepție filosofică idealist-subiectivă în care singura realitate sigură este propriul eu sau conștiința individuală"],
   ["Imuabil", "care rămâne veșnic același, care nu se schimbă; neschimbător, permanent, constant"],
   ["Zelos", "Sârguincios, harnic, activ, devotat, perseverent, plin de zel / râvnă"],
+  ["Voluptate", "o plăcere foarte mare a simțurilor sau o desfătare sufletească profundă, trăită cu intensitate"],
+  ["Efemer", "trecător, care durează o zi / de scurtă durată"],
+  ["Misandrie", "atitudinea sau ideologia de ostilitate generalizată față de bărbați, ca gen / aversiune față de bărbați"],
+  ["Hahaleră", "Persoană lipsită de scrupule, fără caracter, neserioasă"],
+  ["Matroană", "proprietara unui bordel; peștoaică"]
 ];
 
 const STORAGE_KEY = 'flashcards_data_v1';
@@ -594,8 +599,6 @@ function buildConjugationFlashcards() {
   return cards;
 }
 
-// Curata categoriile duplicate (aceleasi nume, in acelasi folder),
-// pastrand progresul cel mai avansat pentru cardurile comune.
 function dedupeDecks(data) {
   const seenByKey = {};
   const merged = [];
