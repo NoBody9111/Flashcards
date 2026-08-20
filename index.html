@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Flashcards</title>
+<style>
+:root {
+  --bg: #0f1115; --panel: #171a21; --panel-2: #1f232c; --text: #e8e9ed;
+  --muted: #8a8f9c; --accent: #6c8cff; --good: #4caf7d; --hard: #e0a835;
+  --again: #e05a5a; --easy: #4c9fe0; --radius: 12px;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
+header { display: flex; align-items: center; justify-content: space-between; padding: 20px 32px; border-bottom: 1px solid #262a33; }
+header h1 { margin: 0; font-size: 1.4rem; cursor: pointer; }
+.header-actions { display: flex; align-items: center; gap: 10px; }
+button { background: var(--panel-2); color: var(--text); border: 1px solid #2b303b; border-radius: 8px; padding: 10px 16px; cursor: pointer; font-size: 0.95rem; }
+button:hover { background: #262b35; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #0f1115; font-weight: 600; }
+button.primary:hover { opacity: 0.9; }
+button.danger { color: var(--again); }
+button.backup { background: #2c313c; border-color: #3e4451; }
+main { max-width: 900px; margin: 0 auto; padding: 24px 32px 60px; }
+.hidden { display: none !important; }
+.row { display: flex; gap: 10px; margin-bottom: 24px; }
+.backup-row { display: flex; gap: 10px; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid #262a33; }
+input[type="text"] { flex: 1; background: var(--panel-2); border: 1px solid #2b303b; color: var(--text); padding: 10px 14px; border-radius: 8px; font-size: 0.95rem; }
+select { background: var(--panel-2); color: var(--text); border: 1px solid #2b303b; padding: 10px 14px; border-radius: 8px; font-size: 0.95rem; }
+.deck-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+.deck-card { background: var(--panel); border: 1px solid #262a33; border-radius: var(--radius); padding: 18px; cursor: pointer; }
+.deck-card:hover { border-color: var(--accent); }
+.deck-card h3 { margin: 0 0 8px; }
+.deck-card .meta { color: var(--muted); font-size: 0.85rem; }
+.deck-card .due-badge { display: inline-block; margin-top: 8px; background: var(--accent); color: #0f1115; font-weight: 600; border-radius: 6px; padding: 2px 8px; font-size: 0.8rem; }
+.actions-row { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+.card-list { display: flex; flex-direction: column; gap: 8px; }
+.card-row { display: flex; justify-content: space-between; align-items: center; background: var(--panel); border: 1px solid #262a33; border-radius: 8px; padding: 10px 14px; }
+.card-row .front { font-weight: 600; }
+.card-row .back { color: var(--muted); margin-left: 10px; }
+.card-row button { padding: 4px 10px; font-size: 0.8rem; }
+#studyProgress { text-align: center; color: var(--muted); margin-bottom: 14px; }
+
+.study-settings-box { background: var(--panel); border: 1px solid #262a33; border-radius: var(--radius); padding: 18px; margin-bottom: 24px; }
+.study-settings-box h3 { margin: 0 0 14px; font-size: 1.1rem; }
+.settings-grid { display: flex; flex-direction: column; gap: 12px; }
+.settings-grid label { cursor: pointer; display: flex; align-items: center; gap: 10px; font-weight: 500; font-size: 0.95rem; }
+.settings-grid input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+.settings-hint { margin: 12px 0 0; font-size: 0.85rem; color: var(--muted); }
+
+.flashcard { max-width: 500px; margin: 0 auto; min-height: 260px; perspective: 1000px; cursor: pointer; }
+.flashcard-inner { position: relative; width: 100%; height: 260px; transition: transform 0.5s; transform-style: preserve-3d; -webkit-transform-style: preserve-3d; }
+.flashcard-inner.no-transition { transition: none; }
+.flashcard-inner.flipped { transform: rotateY(180deg); }
+.flashcard-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px; font-size: 1.6rem; font-weight: 600; border-radius: var(--radius); background: var(--panel); border: 1px solid #262a33; }
+.flashcard-face.back { transform: rotateY(180deg); }
+.pos-tag { position: absolute; top: 12px; left: 14px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); background: var(--panel-2); padding: 3px 8px; border-radius: 5px; }
+.hint { text-align: center; color: var(--muted); margin-top: 14px; }
+
+#interactiveArea { margin-top: 24px; text-align: center; }
+.type-input-wrap { display: flex; gap: 10px; max-width: 400px; margin: 0 auto; }
+.type-input-wrap input { flex: 1; text-align: center; font-size: 1.1rem; padding: 12px; font-weight: 600; background: var(--bg); }
+.article-btns { display: flex; justify-content: center; gap: 14px; }
+.article-btns button { font-size: 1.1rem; padding: 12px 24px; font-weight: 600; background: var(--bg); }
+#feedbackBanner { text-align: center; margin-top: 16px; font-weight: 600; font-size: 1.1rem; padding: 10px; border-radius: 8px; background: var(--panel); border: 1px solid #262a33; max-width: 500px; margin-left: auto; margin-right: auto; }
+
+.answer-buttons { display: flex; justify-content: center; gap: 10px; margin-top: 20px; }
+.answer-buttons button { min-width: 90px; font-weight: 600; }
+.q-again { border-color: var(--again); color: var(--again); }
+.q-hard { border-color: var(--hard); color: var(--hard); }
+.q-good { border-color: var(--good); color: var(--good); }
+.q-easy { border-color: var(--easy); color: var(--easy); }
+#studyDone { text-align: center; margin-top: 40px; color: var(--muted); }
+
+.conjugate-wrap { max-width: 500px; margin: 16px auto 0; text-align: center; }
+.conj-mini-table { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; text-align: left; }
+.conj-mini-row { display: flex; justify-content: space-between; background: var(--panel); border: 1px solid #262a33; border-radius: 8px; padding: 8px 14px; }
+.conj-mini-row .pronoun { color: var(--muted); font-weight: 600; }
+.conj-meaning { text-align: center; color: var(--muted); margin-bottom: 20px; font-size: 1.05rem; }
+.conj-table { max-width: 500px; margin: 0 auto; display: flex; flex-direction: column; gap: 8px; }
+.conj-row { display: flex; align-items: center; justify-content: space-between; background: var(--panel); border: 1px solid #262a33; border-radius: 8px; padding: 12px 16px; cursor: pointer; }
+.conj-row .pronoun { color: var(--muted); font-weight: 600; min-width: 90px; }
+.conj-row .form { font-weight: 600; font-size: 1.05rem; filter: blur(6px); transition: filter 0.15s; user-select: none; }
+.conj-row .form.revealed { filter: blur(0); user-select: text; }
+.conj-row:hover .form { filter: blur(3px); }
+.conj-row:hover .form.revealed { filter: blur(0); }
+.breadcrumb { color: var(--muted); margin-bottom: 16px; font-size: 0.9rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1 id="homeLink">📚 Flashcards</h1>
+  <div class="header-actions">
+    <button id="conjugationsNavBtn">🔤 Conjugări</button>
+    <div id="backBtnWrap" class="hidden"><button id="backBtn">← Înapoi</button></div>
+  </div>
+</header>
+
+<main>
+
+  <section id="folderListView">
+    <div class="backup-row">
+      <button id="exportBtn" class="backup">💾 Descarcă memoria (Backup)</button>
+      <input type="file" id="importFile" accept=".json" class="hidden" />
+      <button id="importBtn" class="backup">📂 Încarcă memorie (Restore)</button>
+    </div>
+    <form id="newFolderForm" class="row">
+      <input id="newFolderName" type="text" placeholder="Nume folder nou (ex: Franceză, Spaniolă)" required />
+      <button type="submit" class="primary">+ Adaugă folder</button>
+    </form>
+    <div id="folderList" class="deck-grid"></div>
+  </section>
+
+  <section id="deckListView" class="hidden">
+    <div class="breadcrumb" id="folderBreadcrumb"></div>
+    <form id="newDeckForm" class="row">
+      <input id="newDeckName" type="text" placeholder="Nume categorie nouă (ex: Verbe germane)" required />
+      <button type="submit" class="primary">+ Adaugă categorie</button>
+    </form>
+    <div id="deckList" class="deck-grid"></div>
+  </section>
+
+  <section id="deckDetailView" class="hidden">
+    <h2 id="deckTitle"></h2>
+
+    <div class="study-settings-box">
+      <h3>⚙️ Moduri de Studiu</h3>
+      <div class="settings-grid">
+        <label><input type="checkbox" id="optReverse"> 🔄 Mod Invers (Vezi traducerea, ghicești cuvântul original)</label>
+        <label><input type="checkbox" id="optTyping"> ⌨️ Mod Scriere (Tastează răspunsul corect - ignoră automat diacriticele/semnele)</label>
+        <label><input type="checkbox" id="optArticle"> 🎯 Ghicește Articolul (Alege der/die/das - se aplică doar substantivelor)</label>
+      </div>
+      <p class="settings-hint">Le poți folosi separat sau le poți combina. Setările se aplică doar pentru sesiunea curentă.</p>
+    </div>
+
+    <div class="actions-row">
+      <button id="studyBtn" class="primary">▶ Studiază (<span id="dueCount">0</span> due)</button>
+      <button id="studyAllBtn">▶ Studiază tot (toate cardurile)</button>
+      <button id="renameDeckBtn">Redenumește categoria</button>
+      <button id="deleteDeckBtn" class="danger">Șterge categoria</button>
+    </div>
+
+    <form id="newCardForm" class="row">
+      <input id="newCardFront" type="text" placeholder="Față (ex: der Hund)" required />
+      <input id="newCardBack" type="text" placeholder="Verso (ex: câinele)" required />
+      <button type="submit" class="primary">+ Adaugă card</button>
+    </form>
+
+    <div id="cardList" class="card-list"></div>
+  </section>
+
+  <section id="studyView" class="hidden">
+    <div id="studyProgress"></div>
+
+    <div id="flashcard" class="flashcard">
+      <div class="flashcard-inner" id="flashcardInner">
+        <div class="flashcard-face front" id="cardFrontFace">
+          <span class="pos-tag hidden" id="posTagFront"></span>
+          <span id="cardFront"></span>
+        </div>
+        <div class="flashcard-face back" id="cardBackFace">
+          <span class="pos-tag hidden" id="posTagBack"></span>
+          <span id="cardBack"></span>
+        </div>
+      </div>
+    </div>
+
+    <p class="hint" id="studyHint">Click pe card ca să vezi răspunsul</p>
+
+    <div id="interactiveArea" class="hidden"></div>
+    <div id="feedbackBanner" class="hidden"></div>
+
+    <div id="conjugateWrap" class="conjugate-wrap hidden">
+      <button id="conjugateCardBtn">🔤 Conjugă verbul</button>
+      <div id="conjugateCardTable" class="conj-mini-table hidden"></div>
+    </div>
+
+    <div id="answerButtons" class="answer-buttons hidden">
+      <button data-q="0" class="q-again">Din nou</button>
+      <button data-q="1" class="q-hard">Greu</button>
+      <button data-q="2" class="q-good">Bine</button>
+      <button data-q="3" class="q-easy">Ușor</button>
+    </div>
+
+    <div id="studyDone" class="hidden">
+      <p>🎉 Gata! Nu mai ai carduri de revizuit acum în această categorie.</p>
+    </div>
+  </section>
+
+  <section id="conjugationsView" class="hidden">
+    <div class="row">
+      <select id="verbSelect"></select>
+      <button id="showAllBtn">Arată tot</button>
+      <button id="hideAllBtn">Ascunde tot</button>
+    </div>
+    <div id="conjugationMeaning" class="conj-meaning"></div>
+    <div id="conjugationTable" class="conj-table"></div>
+  </section>
+
+</main>
+
+<script>
+const PRONOUNS = ["ich", "du", "er/sie/es", "wir", "ihr", "sie/Sie"];
+
+const VERB_MEANINGS = {
+  "sein": "a fi", "haben": "a avea", "werden": "a deveni", "gehen": "a merge",
+  "kommen": "a veni", "machen": "a face", "sehen": "a vedea", "hören": "a auzi / a asculta",
+  "sprechen": "a vorbi", "verstehen": "a înțelege", "denken": "a gândi", "kennen": "a cunoaște (o persoană)",
+  "kaufen": "a cumpăra", "nehmen": "a lua", "geben": "a da", "finden": "a găsi",
+  "bleiben": "a rămâne", "schlafen": "a dormi", "essen": "a mânca", "trinken": "a bea",
+  "arbeiten": "a munci", "wohnen": "a locui", "helfen": "a ajuta", "warten": "a aștepta",
+  "öffnen": "a deschide", "schreiben": "a scrie", "lesen": "a citi", "bedeuten": "a însemna",
+  "zeigen": "a arăta", "passieren": "a se întâmpla", "wissen": "a ști", "fahren": "a merge cu un vehicul",
+  "laufen": "a alerga / a merge pe jos", "können": "a putea", "müssen": "a trebui", "wollen": "a vrea",
+  "dürfen": "a avea voie", "sollen": "a trebui / a i se cere", "mögen": "a plăcea / a dori",
+  "reisen": "a călători", "wandern": "a face drumeții", "vergessen": "a uita", "glauben": "a crede",
+  "benutzen": "a folosi", "holen": "a aduce / a lua", "mitnehmen": "a lua cu sine / a lua la pachet (takeaway)",
+  "liefern": "a livra / a distribui", "vertrauen": "a avea încredere",
+};
+
+const VERB_CONJUGATIONS = {
+  "sein": ["bin", "bist", "ist", "sind", "seid", "sind"],
+  "haben": ["habe", "hast", "hat", "haben", "habt", "haben"],
+  "werden": ["werde", "wirst", "wird", "werden", "werdet", "werden"],
+  "gehen": ["gehe", "gehst", "geht", "gehen", "geht", "gehen"],
+  "kommen": ["komme", "kommst", "kommt", "kommen", "kommt", "kommen"],
+  "machen": ["mache", "machst", "macht", "machen", "macht", "machen"],
+  "sehen": ["sehe", "siehst", "sieht", "sehen", "seht", "sehen"],
+  "hören": ["höre", "hörst", "hört", "hören", "hört", "hören"],
+  "sprechen": ["spreche", "sprichst", "spricht", "sprechen", "sprecht", "sprechen"],
+  "verstehen": ["verstehe", "verstehst", "versteht", "verstehen", "versteht", "verstehen"],
+  "denken": ["denke", "denkst", "denkt", "denken", "denkt", "denken"],
+  "kennen": ["kenne", "kennst", "kennt", "kennen", "kennt", "kennen"],
+  "kaufen": ["kaufe", "kaufst", "kauft", "kaufen", "kauft", "kaufen"],
+  "nehmen": ["nehme", "nimmst", "nimmt", "nehmen", "nehmt", "nehmen"],
+  "geben": ["gebe", "gibst", "gibt", "geben", "gebt", "geben"],
+  "finden": ["finde", "findest", "findet", "finden", "findet", "finden"],
+  "bleiben": ["bleibe", "bleibst", "bleibt", "bleiben", "bleibt", "bleiben"],
+  "schlafen": ["schlafe", "schläfst", "schläft", "schlafen", "schlaft", "schlafen"],
+  "essen": ["esse", "isst", "isst", "essen", "esst", "essen"],
+  "trinken": ["trinke", "trinkst", "trinkt", "trinken", "trinkt", "trinken"],
+  "arbeiten": ["arbeite", "arbeitest", "arbeitet", "arbeiten", "arbeitet", "arbeiten"],
+  "wohnen": ["wohne", "wohnst", "wohnt", "wohnen", "wohnt", "wohnen"],
+  "helfen": ["helfe", "hilfst", "hilft", "helfen", "helft", "helfen"],
+  "warten": ["warte", "wartest", "wartet", "warten", "wartet", "warten"],
+  "öffnen": ["öffne", "öffnest", "öffnet", "öffnen", "öffnet", "öffnen"],
+  "schreiben": ["schreibe", "schreibst", "schreibt", "schreiben", "schreibt", "schreiben"],
+  "lesen": ["lese", "liest", "liest", "lesen", "lest", "lesen"],
+  "bedeuten": ["bedeute", "bedeutest", "bedeutet", "bedeuten", "bedeutet", "bedeuten"],
+  "zeigen": ["zeige", "zeigst", "zeigt", "zeigen", "zeigt", "zeigen"],
+  "passieren": ["passiere", "passierst", "passiert", "passieren", "passiert", "passieren"],
+  "wissen": ["weiß", "weißt", "weiß", "wissen", "wisst", "wissen"],
+  "fahren": ["fahre", "fährst", "fährt", "fahren", "fahrt", "fahren"],
+  "laufen": ["laufe", "läufst", "läuft", "laufen", "lauft", "laufen"],
+  "können": ["kann", "kannst", "kann", "können", "könnt", "können"],
+  "müssen": ["muss", "musst", "muss", "müssen", "müsst", "müssen"],
+  "wollen": ["will", "willst", "will", "wollen", "wollt", "wollen"],
+  "dürfen": ["darf", "darfst", "darf", "dürfen", "dürft", "dürfen"],
+  "sollen": ["soll", "sollst", "soll", "sollen", "sollt", "sollen"],
+  "mögen": ["möchte", "möchtest", "möchte", "möchten", "möchtet", "möchten"],
+  "reisen": ["reise", "reist", "reist", "reisen", "reist", "reisen"],
+  "wandern": ["wandere", "wanderst", "wandert", "wandern", "wandert", "wandern"],
+  "vergessen": ["vergesse", "vergisst", "vergisst", "vergessen", "vergesst", "vergessen"],
+  "glauben": ["glaube", "glaubst", "glaubt", "glauben", "glaubt", "glauben"],
+  "benutzen": ["benutze", "benutzt", "benutzt", "benutzen", "benutzt", "benutzen"],
+  "holen": ["hole", "holst", "holt", "holen", "holt", "holen"],
+  "mitnehmen": ["nehme mit", "nimmst mit", "nimmt mit", "nehmen mit", "nehmt mit", "nehmen mit"],
+  "liefern": ["liefere", "lieferst", "liefert", "liefern", "liefert", "liefern"],
+  "vertrauen": ["vertraue", "vertraust", "vertraut", "vertrauen", "vertraut", "vertrauen"],
+};
+
+const SEED_WORDS = [
+  ["lecker", "gustos / tasty"], ["bald", "curând / soon"], ["echt", "într-adevăr / really"],
+  ["geschlossen", "închis / closed"], ["ziemlich", "destul de / fairly"],
+  ["morgen früh", "mâine dimineață / tomorrow morning"], ["weg", "dispărut, plecat / gone, missing"],
+  ["mehr", "mai mult / more"], ["ich brauche", "am nevoie / I need"], ["reisen", "a călători"],
+  ["die Beziehung", "relație / relationship"], ["verheiratet", "căsătorit / married"],
+  ["die Geschichte", "istorie / history"], ["Fahrrad fahren", "a merge cu bicicleta / cycling"],
+  ["wandern", "a face drumeții / hiking"], ["die Kunst", "artă / art"], ["die Zeit", "timp / time"],
+  ["Wie spät ist es?", "Cât este ceasul?"], ["laufen", "a alerga / a merge pe jos"],
+  ["der Rücken", "spate"], ["andere Sachen", "alte lucruri / other things"], ["die Dinge", "lucruri / things"],
+  ["zurzeit", "în prezent / currently"], ["das Gemüse", "legume / vegetables"], ["schwierig", "dificil / difficult"],
+  ["wissen", "a ști (ich weiß nicht = nu știu)"], ["der Wecker", "ceasul deșteptător / alarm clock"],
+  ["etwa", "aproximativ / around"], ["erste", "primul, prima / first"], ["spät", "târziu / late"],
+  ["benutzen", "a folosi"], ["der Schlüssel", "cheie / key"], ["der Ausgang", "ieșire / exit"],
+  ["vergessen", "a uita"], ["glauben", "a crede"], ["die Nachrichten", "știri / news"],
+  ["leer", "gol / empty"], ["der Schmuck", "bijuterii / jewelry"], ["traurig", "trist / sad"],
+  ["müde", "obosit / tired"], ["schüchtern", "timid / shy"], ["ruhig", "liniștit / quiet"],
+  ["sofort", "imediat / immediately"], ["das Versprechen", "promisiune / promise"], ["zurück", "înapoi / back"],
+  ["wieder", "din nou / again"], ["draußen", "afară / outside"], ["der Künstler", "artistul / artist"],
+  ["mitnehmen", "a lua cu sine / a lua la pachet (takeaway)"], ["links", "stânga / left"], ["rechts", "dreapta / right"],
+  ["geradeaus", "tot înainte / straight ahead"], ["holen", "a aduce / a lua"], ["lustig", "amuzant / funny"],
+  ["Guck mal!", "Privește! / Uită-te! / Look!"], ["die Taschen", "gențile / the bags"], ["nach", "către / spre / după / to"],
+];
+
+const SEED_WORDS_2 = [
+  ["ich kann", "eu pot"], ["ich muss", "eu trebuie"], ["ich will", "eu vreau"], ["ich darf", "eu am voie"],
+  ["ich soll", "eu ar trebui / mi se cere"], ["ich möchte", "eu aș dori"],
+  ["haben", "a avea"], ["sein", "a fi"], ["gehen", "a merge"], ["kommen", "a veni"], ["machen", "a face"],
+  ["sehen", "a vedea"], ["hören", "a auzi / a asculta"], ["sprechen", "a vorbi"], ["verstehen", "a înțelege"],
+  ["denken", "a gândi"], ["kennen", "a cunoaște (o persoană)"], ["kaufen", "a cumpăra"], ["nehmen", "a lua"],
+  ["geben", "a da"], ["finden", "a găsi"], ["bleiben", "a rămâne"], ["schlafen", "a dormi"], ["essen", "a mânca"],
+  ["trinken", "a bea"], ["arbeiten", "a munci"], ["wohnen", "a locui"], ["helfen", "a ajuta"],
+  ["warten", "a aștepta"], ["öffnen", "a deschide"], ["schreiben", "a scrie"], ["lesen", "a citi"],
+  ["bedeuten", "a însemna"], ["zeigen", "a arăta"], ["passieren", "a se întâmpla"],
+  ["weil", "pentru că"], ["aber", "dar"], ["oder", "sau"], ["wenn", "dacă / când"], ["dass", "că"],
+  ["obwohl", "deși"], ["trotzdem", "totuși"], ["deshalb", "de aceea"], ["also", "deci / prin urmare"],
+  ["außerdem", "în plus"], ["zuerst", "mai întâi"], ["dann", "apoi"], ["danach", "după aceea"],
+  ["schließlich", "în final"],
+  ["gut", "bun"], ["schlecht", "rău"], ["groß", "mare"], ["klein", "mic"], ["neu", "nou"], ["alt", "vechi"],
+  ["schnell", "rapid"], ["langsam", "lent"], ["teuer", "scump"], ["billig", "ieftin"], ["krank", "bolnav"],
+  ["gesund", "sănătos"], ["wichtig", "important"], ["einfach", "simplu"], ["richtig", "corect"],
+  ["falsch", "greșit"], ["möglich", "posibil"], ["nötig", "necesar"], ["kostenlos", "gratuit"],
+  ["heute", "azi"], ["gestern", "ieri"], ["morgen", "mâine"], ["immer", "mereu"], ["manchmal", "uneori"],
+  ["nie", "niciodată"], ["oft", "des / frecvent"], ["noch", "încă"], ["schon", "deja"],
+  ["gleich", "imediat / în curând"], ["letzte Woche", "săptămâna trecută"], ["nächste Woche", "săptămâna viitoare"],
+  ["jeden Tag", "în fiecare zi"],
+  ["das Geld", "banii"], ["die Arbeit", "munca"], ["die Wohnung", "apartamentul"], ["das Haus", "casa"],
+  ["die Straße", "strada"], ["der Bahnhof", "gara"], ["der Zug", "trenul"], ["das Flugzeug", "avionul"],
+  ["das Auto", "mașina"], ["das Essen", "mâncarea"], ["das Wasser", "apa"], ["die Stadt", "orașul"],
+  ["das Wetter", "vremea"], ["der Arzt", "doctorul"], ["der Freund / die Freundin", "prietenul / prietena"],
+  ["die Familie", "familia"], ["die Frage", "întrebarea"], ["die Antwort", "răspunsul"], ["der Grund", "motivul"],
+  ["das Problem", "problema"], ["die Möglichkeit", "posibilitatea"],
+  ["Wie geht es dir?", "Ce mai faci?"], ["Ich verstehe nicht.", "Nu înțeleg."],
+  ["Kannst du das wiederholen?", "Poți repeta?"], ["Wie heißt das auf Deutsch?", "Cum se spune asta în germană?"],
+  ["Wo ist...?", "Unde este...?"], ["Wie viel kostet das?", "Cât costă?"], ["Entschuldigung", "Scuzați-mă / Scuze"],
+  ["Macht nichts.", "Nu face nimic. / Nu-i bai."], ["Keine Ahnung.", "Habar n-am."],
+  ["Das stimmt.", "Asta e corect. / Exact."], ["Es geht.", "Merge. / Se poate."], ["Ich bin dran.", "E rândul meu."],
+  ["Was meinst du?", "Ce vrei să spui?"],
+];
+
+const SEED_WORDS_3 = [
+  ["ich", "eu"], ["du", "tu"], ["er", "el"], ["sie (ea)", "ea"], ["es", "el/ea (neutru)"], ["wir", "noi"],
+  ["ihr", "voi"], ["sie (ei/ele)", "ei / ele"], ["Sie (formal)", "dumneavoastră"],
+  ["null", "zero"], ["eins", "unu"], ["zwei", "doi"], ["drei", "trei"], ["vier", "patru"], ["fünf", "cinci"],
+  ["sechs", "șase"], ["sieben", "șapte"], ["acht", "opt"], ["neun", "nouă"], ["zehn", "zece"],
+  ["elf", "unsprezece"], ["zwölf", "doisprezece"], ["zwanzig", "douăzeci"], ["dreißig", "treizeci"],
+  ["vierzig", "patruzeci"], ["fünfzig", "cincizeci"], ["hundert", "o sută"], ["tausend", "o mie"],
+  ["Montag", "luni"], ["Dienstag", "marți"], ["Mittwoch", "miercuri"], ["Donnerstag", "joi"],
+  ["Freitag", "vineri"], ["Samstag", "sâmbătă"], ["Sonntag", "duminică"],
+  ["Januar", "ianuarie"], ["Februar", "februarie"], ["März", "martie"], ["April", "aprilie"], ["Mai", "mai"],
+  ["Juni", "iunie"], ["Juli", "iulie"], ["August", "august"], ["September", "septembrie"],
+  ["Oktober", "octombrie"], ["November", "noiembrie"], ["Dezember", "decembrie"],
+  ["in", "în"], ["auf", "pe (deasupra unei suprafețe)"], ["unter", "sub"], ["neben", "lângă"],
+  ["vor", "în fața"], ["hinter", "în spatele"], ["zwischen", "între"], ["über", "deasupra"],
+  ["an", "lângă / la (un punct fix)"],
+];
+
+const SEED_WORDS_NOTION = [
+  ["lecker", "gustos / tasty"],
+  ["bald / gleich", "curând / soon"],
+  ["echt", "într-adevăr / really"],
+  ["geschlossen", "închis / closed"],
+  ["ziemlich", "destul de / fairly"],
+  ["morgen früh", "mâine dimineață / tomorrow morning"],
+  ["weg", "dispărut, plecat / gone, missing"],
+  ["mehr", "mai mult / more"],
+  ["ich brauche", "am nevoie / I need"],
+  ["reisen", "a călători"],
+  ["die Beziehung", "relație / relationship"],
+  ["verheiratet", "căsătorit / married"],
+  ["die Geschichte", "istorie / history"],
+  ["Fahrrad fahren", "a merge cu bicicleta / cycling"],
+  ["wandern", "a face drumeții / hiking"],
+  ["die Kunst", "artă / art"],
+  ["die Zeit", "timp / time"],
+  ["Wie spät ist es?", "Cât este ceasul?"],
+  ["laufen", "a alerga / a merge pe jos"],
+  ["der Rücken", "spate"],
+  ["andere Sachen", "alte lucruri / other things"],
+  ["die Dinge", "lucruri / things"],
+  ["zurzeit", "în prezent / currently"],
+  ["das Gemüse", "legume / vegetables"],
+  ["schwierig", "dificil / difficult"],
+  ["wissen", "a ști (ich weiß nicht = nu știu)"],
+  ["der Wecker", "ceasul deșteptător / alarm clock"],
+  ["etwa", "aproximativ / around"],
+  ["erstes", "primul / first"],
+  ["spät", "târziu / late"],
+  ["benutzen", "a folosi"],
+  ["der Schlüssel", "cheie / key"],
+  ["der Ausgang", "ieșire / exit"],
+  ["vergessen", "a uita"],
+  ["glauben", "a crede"],
+  ["die Nachrichten", "știri / news"],
+  ["leer", "gol / empty"],
+  ["der Schmuck", "bijuterii / jewelry"],
+  ["traurig", "trist / sad"],
+  ["müde", "obosit / tired"],
+  ["schüchtern", "timid / shy"],
+  ["ruhig", "liniștit / quiet"],
+  ["sofort", "imediat / right away"],
+  ["das Versprechen", "promisiune / promise"],
+  ["zurück", "înapoi / back"],
+  ["wieder", "din nou / again"],
+  ["draußen", "afară / outside"],
+  ["der Künstler", "artistul / artist"],
+  ["Warte!", "Așteaptă! / Wait! / Hold on!"],
+  ["billig", "ieftin / cheap"],
+  ["mitnehmen", "a lua cu sine / a lua la pachet (takeaway)"],
+  ["links", "stânga / left"],
+  ["rechts", "dreapta / right"],
+  ["geradeaus", "tot înainte / straight ahead"],
+  ["holen", "a aduce / a lua"],
+  ["lustig", "amuzant / funny"],
+  ["Guck mal!", "Privește! / Uită-te! / Look!"],
+  ["die Taschen", "gențile / the bags"],
+  ["nach", "către / spre / după / to"],
+  ["zuerst", "mai întâi / first"],
+  ["immer", "mereu / always"],
+  ["Verstecken spielen", "a juca v-ați ascunselea / hide and seek"],
+  ["später", "mai târziu / later"],
+  ["die Zeitung", "ziarul / newspaper"],
+  ["das Obst", "fructe / fruit"],
+  ["gar", "deloc / at all (ex: ich habe gar kein Geld)"],
+  ["überhaupt", "în general / deloc / at all (ex: Er ist der beste Fußballspieler überhaupt)"],
+  ["liefern", "a livra / a distribui / deliver"],
+  ["Was soll ich tun?", "Ce ar trebui să fac? / What should I do?"],
+  ["die Ecke", "colțul / the corner"],
+  ["dasselbe", "același / the same (exact 1 la 1)"],
+  ["das Gleiche", "același / the same (identic, dar nu 1 la 1)"],
+  ["frei Haus", "livrare gratuită / free delivery"],
+  ["Es ist mir egal", "Nu-mi pasă / I don't care"],
+  ["verstehen", "a înțelege"],
+  ["vertrauen", "a avea încredere (ex: vertrau mir = trust me)"],
+  ["nervig", "enervant / annoying"],
+  ["der Urlaub", "vacanță / concediu / vacation"],
+  ["das Schloss", "castel / lacăt / castle"],
+  ["die Sachen", "lucruri / things"],
+  ["das Denkmal", "monument"],
+  ["der Tisch", "masă / table"],
+  ["eigentlich", "de fapt / actually"],
+  ["gut drauf", "binedispus / in a good mood"]
+];
+
+const SEED_WORDS_RO = [
+  ["A călca în străchini", "A fi stângaci, a face gafe."],
+  ["A chibzui", "a cugeta, a gândi, a judeca, a medita, a reflecta"],
+  ["A dojeni", "a certa, a mustra"],
+  ["A face abstracție de", "a nu lua în considerare; a ignora"],
+  ["A periclita", "a pune în pericol, a primejdui"],
+  ["Abnegație", "devotament dus până la sacrificiu"],
+  ["Aforism", "propoziție scurtă și concentrată ce exprimă o idee profundă, memorabilă"],
+  ["Anodin", "fără importanță sau valoare; fără urmări"],
+  ["Apatie", "dezinteres, indiferență"],
+  ["Asanare", "îmbunătățire, redresare"],
+  ["Asiduu", "insistent, perseverent, sârguincios"],
+  ["Austeritate", "cumpătare, severitate, sobrietate, rigiditate"],
+  ["Aviditate", "pasiune, lăcomie, dorință puternică"],
+  ["Axiomă", "adevăr fundamental admis fără demonstrație"],
+  ["Bigot", "habotnic; care disprețuiește pe cei ce nu gândesc la fel ca el"],
+  ["Blajin", "blând, omenos, pașnic, bun la inimă"],
+  ["Brăzdat", "cu cute, zbârcituri sau urme adânci"],
+  ["Buchisire", "studiu anevoios, citit cu greu"],
+  ["Buhăit", "umflat la față"],
+  ["Burlan", "tub prin care se scurge apa de pe acoperiș"],
+  ["Caleidoscopic", "foarte variat, în continuă schimbare, multicolor"],
+  ["Calic", "foarte sărac (adesea și zgârcit)"],
+  ["Calofil", "iubitor excesiv de frumos în exprimare, mai ales literar"],
+  ["Calomnie", "afirmație mincinoasă menită să discrediteze reputația cuiva"],
+  ["Caprifoi", "arbust ornamental cu flori parfumate (Mâna Maicii Domnului)"],
+  ["Cherem (la cheremul cuiva)", "la discreția, la bunul plac al cuiva"],
+  ["Chibzuit", "socotit, cumpănit"],
+  ["Chihlimbar", "rășină fosilizată, apreciată ca piatră semiprețioasă"],
+  ["Chitibuș", "obiecție mică și nefondată; cusur căutat cu tot dinadinsul"],
+  ["Chitibușar", "persoană care caută nod în papură, cusurgiu"],
+  ["Chichiță", "mic detaliu greu de sesizat, care creează dificultăți"],
+  ["Cleric", "persoană cu funcție religioasă (preot, călugăr etc.)"],
+  ["A consemna", "a menționa, a înregistra, a nota"],
+  ["Consternat", "mâhnit, nedumerit, uimit"],
+  ["Convenționalism", "tendința de a te conforma regulilor general acceptate, fără gândire proprie"],
+  ["Cuișoare", "condiment din mugurii uscați ai unui arbust exotic"],
+  ["Debordant", "copleșitor, exuberant, care se revarsă"],
+  ["Decepționat", "dezamăgit"],
+  ["Dogoritor", "canicular, fierbinte, arzător"],
+  ["Ecleziastic", "privitor la biserică sau cler"],
+  ["Elocvent", "care se exprimă frumos și convingător"],
+  ["Eminamente", "în cea mai mare parte, prin excelență"],
+  ["Emfatic", "nenatural, umflat, bombastic"],
+  ["Empiric", "bazat doar pe experiență"],
+  ["Erezie", "credință care se abate de la dogmele unei biserici"],
+  ["Erudit", "cu cunoștințe vaste; savant"],
+  ["Eșafod", "platformă pentru execuții publice"],
+  ["Euristic", "care ajută la descoperirea unor cunoștințe noi"],
+  ["Expurgat", "curățat de pasaje considerate inacceptabile (despre texte)"],
+  ["Extincție", "dispariție totală"],
+  ["Exuberant", "foarte vioi, plin de viață, expansiv"],
+  ["Fariseism", "duplicitate, fățărnicie, ipocrizie"],
+  ["Fățarnic", "lipsit de sinceritate, fals, ipocrit"],
+  ["Filistin", "om mulțumit de sine, lipsit de rafinament cultural"],
+  ["Fistichiu", "ciudat, extravagant"],
+  ["Flaușat", "pufos, păros"],
+  ["Frenezie", "stare de excitare excesivă, pasiune nestăpânită"],
+  ["Garnizoană", "unități militare stabilite într-o localitate"],
+  ["Găunos", "gol pe dinăuntru, lipsit de conținut real"],
+  ["Guturai", "răceală ușoară, rinită"],
+  ["Herghelie", "crescătorie de cai"],
+  ["Himeric", "lipsit de temei real; iluzoriu"],
+  ["Hrăpăreț", "lacom de avere, care vrea să se îmbogățească prin orice mijloc"],
+  ["Ibovnic", "amant, iubit"],
+  ["Irefutabil", "convingător, care nu poate fi combătut"],
+  ["Incurie", "dezordine, neîngrijire"],
+  ["A indigna", "a (se) supăra, a (se) revolta din cauza unei nedreptăți"],
+  ["Indolent", "lipsit de energie, nepăsător, leneș"],
+  ["Jgheab", "canal deschis pentru scurgerea unui lichid"],
+  ["Laborios", "care cere multă muncă și efort"],
+  ["Lespede", "placă mare de piatră"],
+  ["Letargie", "inactivitate, amorțeală, somn adânc patologic"],
+  ["Macabru", "funebru, groaznic, sinistru"],
+  ["Migălos", "meticulos, minuțios"],
+  ["Mitoman", "mincinos"],
+  ["Monomanie", "obsesia unui singur gând; idee fixă"],
+  ["Moravuri", "obiceiurile și conduita morală a unui popor"],
+  ["Nerozie", "stupiditate, prostie"],
+  ["Nesaț", "dorință puternică, lăcomie, poftă"],
+  ["Neverosimil", "de necrezut, fără credibilitate"],
+  ["Neprihănit", "fără păcat sau vină; curat, pur"],
+  ["Nihilism", "negarea radicală a unui sistem de valori"],
+  ["Onomastică", "știința care studiază numele proprii"],
+  ["Palindrom", "șir de caractere care se citește la fel din ambele direcții"],
+  ["Parcimonie", "zgârcenie, economie excesivă"],
+  ["Paroxism", "intensitate maximă, punct culminant"],
+  ["Perene", "care durează mult, care nu dispare"],
+  ["Perfid", "care ascunde răutate sub o aparență binevoitoare"],
+  ["Periplu", "călătorie lungă și anevoioasă"],
+  ["Perorație", "partea finală / concluzia unui discurs"],
+  ["Podgorie", "plantații întinse de viță-de-vie"],
+  ["Posac", "morocănos, tăcut, necomunicativ"],
+  ["Poticnire", "împiedicare, oprire bruscă, dificultate"],
+  ["Prejudiciu", "pagubă sau daună suferită de cineva"],
+  ["A profetiza", "a prezice viitorul"],
+  ["Proletariat", "clasa muncitorilor săraci"],
+  ["Proliferare", "înmulțire excesivă, răspândire rapidă"],
+  ["Pronunciament", "protest față de un sistem politic, lovitură de stat militară"],
+  ["Revelator", "ceva ce dezvăluie brusc un lucru important"],
+  ["Rezonanță", "vibrație; (fig.) ecou, impresie puternică"],
+  ["Santinelă", "militar care face pază"],
+  ["Scrupul", "sentiment puternic al corectitudinii; îndoială de conștiință"],
+  ["Senin", "fără nori, limpede, liniștit"],
+  ["Semeț", "falnic, mândru, sfidător"],
+  ["Sidef", "material dur, alb, lucios, din interiorul unor scoici"],
+  ["A se sinchisi", "a-i păsa, a se neliniști, a lua în seamă (sensul reflexiv modern)"],
+  ["Sindrofie", "petrecere, reuniune (adesea ironic)"],
+  ["Sincopă", "blocaj; leșin"],
+  ["A sfredeli", "a găuri, a perfora"],
+  ["Smerit", "respectuos, modest, umil"],
+  ["Somptuos", "elegant, impunător, luxos și costisitor"],
+  ["Soporific", "adormitor; (fig.) plictisitor"],
+  ["Sterp", "steril, care nu poate procrea; neroditor"],
+  ["Străveziu", "transparent, limpede"],
+  ["A subjuga", "a domina, a supune"],
+  ["Tăciune", "cărbune sau lemn ars, fără flacără"],
+  ["Tiradă", "parte a unui discurs în care se dezvoltă pe larg o idee"],
+  ["Tiraj", "numărul de exemplare tipărite dintr-o carte"],
+  ["Toropeală", "amorțeală, buimăceală dinaintea somnului"],
+  ["Unanim", "acceptat de toți"],
+  ["Uvertură", "compoziție muzicală orchestrală introductivă"],
+  ["Vanitate", "dorința de a face impresie; orgoliu"],
+  ["Vanitos", "înfumurat, îngâmfat"],
+  ["Verosimil", "credibil, plauzibil"],
+  ["Virtute", "trăsătură morală dominantă; integritate"],
+  ["Zeflemea", "ironie ușoară, luare în râs"],
+  ["Fontă", "aliaj format din fier și carbon"],
+  ["Moloz", "Material sub formă de pulbere de tencuială, spărturi de cărămidă și mortar, provenit din dărâmarea unor ziduri sau după executarea unor lucrări de zidărie"],
+  ["Abject", "mârșav, ticălos, abominabil, dezgustător"],
+  ["A denunța", "A aduce la cunoștința unei autorități săvârșirea unei infracțiuni, a pârî"],
+  ["Lamentabil", "Care este vrednic de plâns; care inspiră milă, deplorabil"],
+  ["A aseleniza", "A lua contact cu suprafața Lunii, a se așeza pe Lună"],
+  ["Solipsism", "concepție filosofică idealist-subiectivă în care singura realitate sigură este propriul eu sau conștiința individuală"],
+  ["Imuabil", "care rămâne veșnic același, care nu se schimbă; neschimbător, permanent, constant"],
+  ["Zelos", "Sârguincios, harnic, activ, devotat, perseverent, plin de zel / râvnă"],
+];
+
+const STORAGE_KEY = 'flashcards_data_v1';
+const SEED_FLAG_KEY = 'flashcards_seeded_v1';
+const SEED_FLAG_KEY_2 = 'flashcards_seeded_v2';
+const SEED_FLAG_KEY_3 = 'flashcards_seeded_v3';
+const SEED_FLAG_KEY_NOTION = 'flashcards_seeded_notion_v1';
+const SEED_FLAG_KEY_RO = 'flashcards_seeded_ro_v1';
+const SEED_FLAG_KEY_VERBE = 'flashcards_seeded_v4';
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+
+function buildConjugationFlashcards() {
+  const cards = [];
+  Object.keys(VERB_CONJUGATIONS).forEach(verb => {
+    const forms = VERB_CONJUGATIONS[verb];
+    const meaning = VERB_MEANINGS[verb] || '';
+    PRONOUNS.forEach((pronoun, i) => {
+      cards.push([`${verb} (${meaning}) — ${pronoun}`, forms[i]]);
+    });
+  });
+  return cards;
+}
+
+// Curata categoriile duplicate (aceleasi nume, in acelasi folder),
+// pastrand progresul cel mai avansat pentru cardurile comune.
+function dedupeDecks(data) {
+  const seenByKey = {};
+  const merged = [];
+  let didMerge = false;
+  data.decks.forEach(d => {
+    const key = d.folder + '|||' + d.name;
+    if (seenByKey[key]) {
+      didMerge = true;
+      const target = seenByKey[key];
+      d.cards.forEach(c => {
+        const existing = target.cards.find(tc => tc.front.trim().toLowerCase() === c.front.trim().toLowerCase());
+        if (!existing) {
+          target.cards.push(c);
+        } else if ((c.repetitions || 0) > (existing.repetitions || 0)) {
+          Object.assign(existing, c, { id: existing.id });
+        }
+      });
+    } else {
+      seenByKey[key] = d;
+      merged.push(d);
+    }
+  });
+  if (didMerge) data.decks = merged;
+  return didMerge;
+}
+
+function loadData() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  let data = raw ? (JSON.parse(raw) || { decks: [], folders: [] }) : { decks: [], folders: [] };
+  if (!data.folders) data.folders = [];
+  data.decks.forEach(d => { if (!d.folder) d.folder = 'Germană'; });
+
+  const didDedupe = dedupeDecks(data);
+
+  function addDeckOnce(flagKey, folder, name, wordList) {
+    if (localStorage.getItem(flagKey)) {
+      const deck = data.decks.find(d => d.name === name && d.folder === folder);
+      if (deck) {
+        let changed = false;
+        wordList.forEach(([f, b]) => {
+          const card = deck.cards.find(c => c.front.toLowerCase() === f.toLowerCase());
+          if (!card) {
+            deck.cards.push({ id: uid(), front: f, back: b, ef: 2.5, interval: 0, repetitions: 0, due: Date.now() });
+            changed = true;
+          } else if (card.back !== b) {
+            card.back = b;
+            changed = true;
+          }
+        });
+        if (changed) saveData(data);
+      }
+      return;
+    }
+    if (!data.folders.includes(folder)) data.folders.push(folder);
+    data.decks.push({
+      id: uid(), name, folder,
+      cards: wordList.map(([front, back]) => ({
+        id: uid(), front, back, ef: 2.5, interval: 0, repetitions: 0, due: Date.now()
+      }))
+    });
+    localStorage.setItem(flagKey, '1');
+  }
+
+  addDeckOnce(SEED_FLAG_KEY, 'Germană', 'Cuvinte inițiale', SEED_WORDS);
+  addDeckOnce(SEED_FLAG_KEY_2, 'Germană', 'A2/B1 - cuvinte de bază', SEED_WORDS_2);
+  addDeckOnce(SEED_FLAG_KEY_3, 'Germană', 'A1 - fundații (pronume, numere, zile, luni, prepoziții)', SEED_WORDS_3);
+  addDeckOnce(SEED_FLAG_KEY_NOTION, 'Germană', 'Cuvinte Notion', SEED_WORDS_NOTION);
+  addDeckOnce(SEED_FLAG_KEY_VERBE, 'Germană', 'Verbe - conjugare (flashcards)', buildConjugationFlashcards());
+  addDeckOnce(SEED_FLAG_KEY_RO, 'Vocabular avansat românesc', 'Cuvinte rare / neologisme', SEED_WORDS_RO);
+
+  if (didDedupe) saveData(data);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  return data;
+}
+function saveData(data) { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+
+document.getElementById('exportBtn').onclick = () => {
+  const data = localStorage.getItem(STORAGE_KEY);
+  if (!data) return alert('Nu există date de salvat!');
+  const blob = new Blob([data], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `flashcards_backup_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+document.getElementById('importBtn').onclick = () => document.getElementById('importFile').click();
+document.getElementById('importFile').onchange = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (!confirm('Aceasta va înlocui TOATE datele curente din aplicație cu cele din fișierul încărcat. Continui?')) {
+    e.target.value = '';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const jsonStr = ev.target.result;
+      const parsed = JSON.parse(jsonStr);
+      if (parsed && parsed.decks && parsed.folders) {
+        localStorage.setItem(STORAGE_KEY, jsonStr);
+        alert('Datele au fost încărcate cu succes!');
+        location.reload();
+      } else alert('Fișier invalid.');
+    } catch(err) { alert('Eroare la citire.'); }
+  };
+  reader.readAsText(file);
+};
+
+function getVerbKey(front) {
+  let f = front.trim().toLowerCase();
+  f = f.split('(')[0].trim();
+  if (VERB_CONJUGATIONS[f]) return f;
+  return null;
+}
+function detectPOS(front) {
+  const f = front.trim();
+  if (/^(der|die|das)\s/i.test(f)) return 'substantiv';
+  if (getVerbKey(f)) return 'verb';
+  if (/\?$/.test(f) || f.split(' ').length > 3) return 'frază';
+  if (f.split(' ').length > 1) return 'expresie';
+  return 'adj. / adv.';
+}
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function getCleanTarget(str) {
+  return str.toLowerCase()
+    .replace(/\(.*?\)/g, '')
+    .replace(/[ä]/g, 'a').replace(/[ö]/g, 'o').replace(/[ü]/g, 'u').replace(/[ß]/g, 'ss')
+    .replace(/[^a-z0-9]/g, '');
+}
+function compareTyping(input, target) {
+  return getCleanTarget(input) === getCleanTarget(target) && getCleanTarget(input) !== '';
+}
+function getVisibleTarget(str) {
+  return str.replace(/\(.*?\)/g, '').trim();
+}
+
+let currentFolder = null;
+let currentDeckId = null;
+let studyQueue = [];
+let studyIndex = 0;
+let flipped = false;
+let backAction = () => {};
+
+let modeReverse = false;
+let modeTyping = false;
+let modeArticle = false;
+let currentTargetAnswer = "";
+
+const folderListView = document.getElementById('folderListView');
+const deckListView = document.getElementById('deckListView');
+const deckDetailView = document.getElementById('deckDetailView');
+const studyView = document.getElementById('studyView');
+const conjugationsView = document.getElementById('conjugationsView');
+const backBtnWrap = document.getElementById('backBtnWrap');
+
+function showView(view) {
+  [folderListView, deckListView, deckDetailView, studyView, conjugationsView].forEach(v => v.classList.add('hidden'));
+  view.classList.remove('hidden');
+}
+
+function goFolders() { currentFolder = null; currentDeckId = null; showView(folderListView); backBtnWrap.classList.add('hidden'); renderFolderList(); }
+function goFolderDecks(folder) { currentFolder = folder; currentDeckId = null; showView(deckListView); backBtnWrap.classList.remove('hidden'); backAction = goFolders; document.getElementById('folderBreadcrumb').textContent = folder; renderDeckList(); }
+function goDeckDetail(id) { currentDeckId = id; showView(deckDetailView); backBtnWrap.classList.remove('hidden'); backAction = () => goFolderDecks(currentFolder); document.getElementById('deckTitle').textContent = getDeck(id).name; renderCardList(); }
+
+document.getElementById('homeLink').onclick = goFolders;
+document.getElementById('backBtn').onclick = () => backAction();
+
+function renderFolderList() {
+  const data = loadData();
+  const el = document.getElementById('folderList'); el.innerHTML = '';
+  const folders = data.folders.length ? data.folders : Array.from(new Set(data.decks.map(d => d.folder)));
+  folders.forEach(folder => {
+    const decks = data.decks.filter(d => d.folder === folder);
+    const cardCount = decks.reduce((s, d) => s + d.cards.length, 0);
+    const dueCount = decks.reduce((s, d) => s + d.cards.filter(c => (c.due || 0) <= Date.now()).length, 0);
+    const card = document.createElement('div'); card.className = 'deck-card';
+    card.innerHTML = `<h3>📁 ${escapeHtml(folder)}</h3><div class="meta">${decks.length} categorii · ${cardCount} carduri</div>${dueCount > 0 ? `<div class="due-badge">${dueCount} de revizuit</div>` : ''}`;
+    card.onclick = () => goFolderDecks(folder); el.appendChild(card);
+  });
+}
+
+document.getElementById('newFolderForm').onsubmit = (e) => { e.preventDefault(); const input = document.getElementById('newFolderName'); const name = input.value.trim(); if (!name) return; const data = loadData(); if (!data.folders.includes(name)) data.folders.push(name); saveData(data); input.value = ''; renderFolderList(); };
+
+function getDeck(id) { return loadData().decks.find(d => d.id === id); }
+
+function renderDeckList() {
+  const data = loadData();
+  const decks = data.decks.filter(d => d.folder === currentFolder);
+  const el = document.getElementById('deckList'); el.innerHTML = '';
+  decks.forEach(d => {
+    const dueCount = d.cards.filter(c => (c.due || 0) <= Date.now()).length;
+    const card = document.createElement('div'); card.className = 'deck-card';
+    card.innerHTML = `<h3>${escapeHtml(d.name)}</h3><div class="meta">${d.cards.length} carduri</div>${dueCount > 0 ? `<div class="due-badge">${dueCount} de revizuit</div>` : ''}`;
+    card.onclick = () => goDeckDetail(d.id); el.appendChild(card);
+  });
+}
+
+document.getElementById('newDeckForm').onsubmit = (e) => { e.preventDefault(); const input = document.getElementById('newDeckName'); const name = input.value.trim(); if (!name) return; const data = loadData(); data.decks.push({ id: uid(), name, folder: currentFolder, cards: [] }); saveData(data); input.value = ''; renderDeckList(); };
+
+function renderCardList() {
+  const deck = getDeck(currentDeckId);
+  document.getElementById('dueCount').textContent = deck.cards.filter(c => (c.due || 0) <= Date.now()).length;
+  const el = document.getElementById('cardList'); el.innerHTML = '';
+  deck.cards.forEach(c => {
+    const row = document.createElement('div'); row.className = 'card-row';
+    row.innerHTML = `<div><span class="front">${escapeHtml(c.front)}</span><span class="back">${escapeHtml(c.back)}</span></div><button data-id="${c.id}">Șterge</button>`;
+    row.querySelector('button').onclick = () => { const data = loadData(); const d = data.decks.find(dd => dd.id === currentDeckId); d.cards = d.cards.filter(cc => cc.id !== c.id); saveData(data); renderCardList(); };
+    el.appendChild(row);
+  });
+}
+
+document.getElementById('newCardForm').onsubmit = (e) => { e.preventDefault(); const f = document.getElementById('newCardFront'); const b = document.getElementById('newCardBack'); if (!f.value.trim() || !b.value.trim()) return; const data = loadData(); const d = data.decks.find(dd => dd.id === currentDeckId); d.cards.push({ id: uid(), front: f.value.trim(), back: b.value.trim(), ef: 2.5, interval: 0, repetitions: 0, due: Date.now() }); saveData(data); f.value = ''; b.value = ''; f.focus(); renderCardList(); };
+document.getElementById('renameDeckBtn').onclick = () => { const deck = getDeck(currentDeckId); const name = prompt('Nume nou:', deck.name); if (!name || !name.trim()) return; const data = loadData(); data.decks.find(d => d.id === currentDeckId).name = name.trim(); saveData(data); document.getElementById('deckTitle').textContent = name.trim(); };
+document.getElementById('deleteDeckBtn').onclick = () => { if (!confirm(`Ștergi categoria?`)) return; const data = loadData(); data.decks = data.decks.filter(d => d.id !== currentDeckId); saveData(data); goFolderDecks(currentFolder); };
+
+document.getElementById('studyBtn').onclick = () => { initStudy(true); };
+document.getElementById('studyAllBtn').onclick = () => { initStudy(false); };
+
+function initStudy(onlyDue) {
+  const deck = getDeck(currentDeckId);
+  studyQueue = onlyDue ? deck.cards.filter(c => (c.due || 0) <= Date.now()) : deck.cards.slice();
+  for (let i = studyQueue.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [studyQueue[i], studyQueue[j]] = [studyQueue[j], studyQueue[i]]; }
+  studyIndex = 0;
+
+  modeReverse = document.getElementById('optReverse').checked;
+  modeTyping = document.getElementById('optTyping').checked;
+  modeArticle = document.getElementById('optArticle').checked;
+
+  showView(studyView);
+  backBtnWrap.classList.remove('hidden'); backAction = () => goDeckDetail(currentDeckId);
+  document.getElementById('studyDone').classList.add('hidden');
+  document.getElementById('flashcard').classList.remove('hidden');
+  renderStudyCard();
+}
+
+function flipCard() {
+  if (flipped) return;
+  flipped = true;
+  document.getElementById('flashcardInner').classList.add('flipped');
+  document.getElementById('answerButtons').classList.remove('hidden');
+  document.getElementById('studyHint').classList.add('hidden');
+
+  let inp = document.getElementById('typeInput');
+  if(inp) inp.disabled = true;
+}
+
+document.getElementById('flashcard').onclick = () => {
+  if(!flipped) {
+      document.getElementById('feedbackBanner').classList.add('hidden');
+      flipCard();
+  }
+};
+
+window.triggerTypingCheck = function() {
+  if(flipped) return;
+  let val = document.getElementById('typeInput').value;
+  let isCorrect = compareTyping(val, currentTargetAnswer);
+
+  let banner = document.getElementById('feedbackBanner');
+  banner.classList.remove('hidden');
+  if (isCorrect) {
+    banner.innerHTML = `<span style="color:var(--good)">✅ Corect!</span>`;
+  } else {
+    banner.innerHTML = `<span style="color:var(--again)">❌ Ai scris: <strong>${escapeHtml(val || "(gol)")}</strong> (Corect: ${escapeHtml(getVisibleTarget(currentTargetAnswer))})</span>`;
+  }
+  flipCard();
+};
+
+window.triggerArticleCheck = function(guessed, correct) {
+  if(flipped) return;
+  let isCorrect = (guessed === correct);
+  let banner = document.getElementById('feedbackBanner');
+  banner.classList.remove('hidden');
+  if(isCorrect) {
+      banner.innerHTML = `<span style="color:var(--good)">✅ Corect (${correct})</span>`;
+  } else {
+      banner.innerHTML = `<span style="color:var(--again)">❌ Ai ales: <strong>${guessed}</strong>. Corect era: ${correct}</span>`;
+  }
+  flipCard();
+};
+
+function renderStudyCard() {
+  if (studyIndex >= studyQueue.length) {
+    document.getElementById('flashcard').classList.add('hidden');
+    document.getElementById('answerButtons').classList.add('hidden');
+    document.getElementById('conjugateWrap').classList.add('hidden');
+    document.getElementById('interactiveArea').classList.add('hidden');
+    document.getElementById('feedbackBanner').classList.add('hidden');
+    document.getElementById('studyHint').classList.add('hidden');
+    document.getElementById('studyProgress').textContent = '';
+    document.getElementById('studyDone').classList.remove('hidden');
+    return;
+  }
+  flipped = false;
+  const c = studyQueue[studyIndex];
+  const inner = document.getElementById('flashcardInner');
+  inner.classList.add('no-transition'); inner.classList.remove('flipped');
+  document.getElementById('answerButtons').classList.add('hidden');
+  document.getElementById('feedbackBanner').classList.add('hidden');
+  document.getElementById('studyProgress').textContent = `${studyIndex + 1} / ${studyQueue.length}`;
+
+  let displayFront = c.front;
+  let displayBack = c.back;
+  currentTargetAnswer = c.back;
+
+  const pos = detectPOS(c.front);
+  const posFront = document.getElementById('posTagFront');
+  const posBack = document.getElementById('posTagBack');
+  posFront.textContent = pos; posBack.textContent = pos;
+  posFront.classList.remove('hidden'); posBack.classList.remove('hidden');
+
+  let isNounMatch = /^(der|die|das)\s+(.+)$/i.exec(c.front);
+  let usesArticleMode = false;
+  let nounArticle = "";
+
+  if (modeReverse) {
+      displayFront = c.back;
+      displayBack = c.front;
+      currentTargetAnswer = c.front;
+  } else if (modeArticle && isNounMatch) {
+      nounArticle = isNounMatch[1].toLowerCase();
+      displayFront = "___ " + isNounMatch[2];
+      displayBack = c.front;
+      currentTargetAnswer = nounArticle;
+      usesArticleMode = true;
+  }
+
+  document.getElementById('cardFront').textContent = displayFront;
+  document.getElementById('cardBack').textContent = displayBack;
+
+  let interactiveArea = document.getElementById('interactiveArea');
+  interactiveArea.innerHTML = '';
+  interactiveArea.classList.remove('hidden');
+
+  let hintText = document.getElementById('studyHint');
+  hintText.classList.remove('hidden');
+
+  if (usesArticleMode && !modeTyping) {
+      hintText.textContent = "Alege articolul corect (sau click pe card pt răspuns)";
+      interactiveArea.innerHTML = `
+          <div class="article-btns">
+              <button onclick="event.stopPropagation(); triggerArticleCheck('der', '${nounArticle}')">der</button>
+              <button onclick="event.stopPropagation(); triggerArticleCheck('die', '${nounArticle}')">die</button>
+              <button onclick="event.stopPropagation(); triggerArticleCheck('das', '${nounArticle}')">das</button>
+          </div>
+      `;
+  } else if (modeTyping) {
+      hintText.textContent = "Tastează răspunsul și apasă Enter";
+      interactiveArea.innerHTML = `
+          <div class="type-input-wrap">
+              <input type="text" id="typeInput" placeholder="..." autocomplete="off" onclick="event.stopPropagation()" />
+              <button onclick="event.stopPropagation(); triggerTypingCheck()">Verifică</button>
+          </div>
+      `;
+      setTimeout(() => {
+          let inp = document.getElementById('typeInput');
+          if(inp) {
+              inp.focus();
+              inp.onkeypress = (e) => { if(e.key === 'Enter') triggerTypingCheck(); }
+          }
+      }, 50);
+  } else {
+      interactiveArea.classList.add('hidden');
+      hintText.textContent = "Click pe card ca să vezi răspunsul";
+  }
+
+  const verbKey = getVerbKey(c.front);
+  const conjWrap = document.getElementById('conjugateWrap');
+  const conjTable = document.getElementById('conjugateCardTable');
+  conjTable.classList.add('hidden'); conjTable.innerHTML = '';
+  if (verbKey) {
+    conjWrap.classList.remove('hidden');
+    document.getElementById('conjugateCardBtn').onclick = (ev) => {
+      ev.stopPropagation();
+      const forms = VERB_CONJUGATIONS[verbKey];
+      conjTable.innerHTML = PRONOUNS.map((p, i) => `<div class="conj-mini-row"><span class="pronoun">${p}</span><span>${forms[i]}</span></div>`).join('');
+      conjTable.classList.toggle('hidden');
+    };
+  } else conjWrap.classList.add('hidden');
+
+  requestAnimationFrame(() => requestAnimationFrame(() => inner.classList.remove('no-transition')));
+}
+
+document.getElementById('answerButtons').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-q]');
+  if (!btn) return;
+  const quality = parseInt(btn.dataset.q, 10);
+  const c = studyQueue[studyIndex];
+  const data = loadData();
+  const d = data.decks.find(dd => dd.id === currentDeckId);
+  const cardInData = d.cards.find(cc => cc.id === c.id);
+  Object.assign(cardInData, schedule(cardInData, quality));
+  saveData(data);
+  studyIndex++;
+  renderStudyCard();
+});
+
+function schedule(card, quality) {
+  let { ef = 2.5, interval = 0, repetitions = 0 } = card;
+  if (quality === 0) { repetitions = 0; interval = 1 / 288; }
+  else {
+    const q = { 1: 3, 2: 4, 3: 5 }[quality];
+    ef = ef + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02));
+    if (ef < 1.3) ef = 1.3;
+    repetitions += 1;
+    if (repetitions === 1) interval = 1; else if (repetitions === 2) interval = 6; else interval = Math.round(interval * ef);
+    if (quality === 1) interval = Math.max(1, Math.round(interval * 0.5));
+    if (quality === 3) interval = Math.round(interval * 1.3);
+  }
+  return { ef, interval, repetitions, due: Date.now() + interval * 24 * 60 * 60 * 1000 };
+}
+
+const verbSelect = document.getElementById('verbSelect');
+Object.keys(VERB_CONJUGATIONS).forEach(verb => {
+  const opt = document.createElement('option'); opt.value = verb; opt.textContent = `${verb} (${VERB_MEANINGS[verb] || ''})`; verbSelect.appendChild(opt);
+});
+document.getElementById('conjugationsNavBtn').onclick = () => { showView(conjugationsView); backBtnWrap.classList.remove('hidden'); backAction = goFolders; renderConjugationTable(); };
+verbSelect.onchange = renderConjugationTable;
+
+function renderConjugationTable() {
+  const verb = verbSelect.value || Object.keys(VERB_CONJUGATIONS)[0];
+  verbSelect.value = verb;
+  const forms = VERB_CONJUGATIONS[verb];
+  document.getElementById('conjugationMeaning').textContent = `${verb} — ${VERB_MEANINGS[verb] || ''}`;
+  const el = document.getElementById('conjugationTable'); el.innerHTML = '';
+  PRONOUNS.forEach((pronoun, i) => {
+    const row = document.createElement('div'); row.className = 'conj-row';
+    row.innerHTML = `<span class="pronoun">${pronoun}</span><span class="form">${forms[i]}</span>`;
+    row.onclick = () => row.querySelector('.form').classList.toggle('revealed');
+    el.appendChild(row);
+  });
+}
+document.getElementById('showAllBtn').onclick = () => { document.querySelectorAll('#conjugationTable .form').forEach(f => f.classList.add('revealed')); };
+document.getElementById('hideAllBtn').onclick = () => { document.querySelectorAll('#conjugationTable .form').forEach(f => f.classList.remove('revealed')); };
+
+goFolders();
+</script>
+</body>
+</html>
