@@ -92,7 +92,7 @@ select { background: var(--panel-2); color: var(--text); border: 1px solid #2b30
 <header>
   <h1 id="homeLink">📚 Flashcards</h1>
   <div class="header-actions">
-    <button id="conjugationsNavBtn">🔤 Conjugări</button>
+    <button id="conjugationsNavBtn">🔤 Conjugări (DE)</button>
     <div id="backBtnWrap" class="hidden"><button id="backBtn">← Înapoi</button></div>
   </div>
 </header>
@@ -129,7 +129,7 @@ select { background: var(--panel-2); color: var(--text); border: 1px solid #2b30
       <div class="settings-grid">
         <label><input type="checkbox" id="optReverse"> 🔄 Mod Invers (Vezi traducerea, ghicești cuvântul original)</label>
         <label><input type="checkbox" id="optTyping"> ⌨️ Mod Scriere (Tastează răspunsul corect - ignoră automat diacriticele/semnele)</label>
-        <label><input type="checkbox" id="optArticle"> 🎯 Ghicește Articolul (Alege der/die/das - se aplică doar substantivelor)</label>
+        <label><input type="checkbox" id="optArticle"> 🎯 Ghicește Articolul (Alege der/die/das/il/la - se aplică doar substantivelor)</label>
       </div>
       <p class="settings-hint">Le poți folosi separat sau le poți combina. Setările se aplică doar pentru sesiunea curentă.</p>
     </div>
@@ -503,7 +503,7 @@ const SEED_WORDS_RO = [
   ["Incurie", "dezordine, neîngrijire"],
   ["A indigna", "a (se) supăra, a (se) revolta din cauza unei nedreptăți"],
   ["Indolent", "lipsit de energie, nepăsător, leneș"],
-  ["Jgheab", "canal deschis pentru scurgerea unui lichid"],
+  ["Jgheab", "canal deschis pentru scurgerea unui liquid"],
   ["Laborios", "care cere multă muncă și efort"],
   ["Lespede", "placă mare de piatră"],
   ["Letargie", "inactivitate, amorțeală, somn adânc patologic"],
@@ -577,6 +577,67 @@ const SEED_WORDS_RO = [
   ["Matroană", "proprietara unui bordel; peștoaică"]
 ];
 
+const SEED_WORDS_IT = [
+  // Cuvintele utilizatorului
+  ["stanco / stanca", "obosit / obosită"],
+  ["il paese / la città", "orașul / localitatea / țara"],
+  ["tedesco", "german / limba germană"],
+  ["l'albero", "copacul / arborele"],
+  ["rotto", "stricat / rupt"],
+  ["già", "deja"],
+  ["caro", "scump / drag"],
+  ["l'inverno", "iarna"],
+  ["le collane", "colierele"],
+  ["anche", "de asemenea / și"],
+  ["cucinare / la cucina", "a găti / bucătăria"],
+  ["insieme", "împreună"],
+  ["impegnato / impegnata", "ocupat / ocupată"],
+  ["qui / qua", "aici / pe aici"],
+  ["lì / là", "acolo / pe acolo"],
+  ["alto / alta", "înalt / înaltă"],
+  ["purtroppo", "din păcate"],
+  ["ora / adesso", "acum"],
+  ["oggi", "azi"],
+  ["noioso", "plictisitor"],
+  ["malato", "bolnav"],
+  ["la coinquilina", "colega de cameră"],
+  ["sporco / sporca", "murdar / murdară"],
+  ["felice", "fericit / fericită"],
+  ["lontano / lontana", "departe"],
+  ["divertente", "amuzant / distractiv"],
+  ["sempre", "mereu"],
+  ["la bella giornata", "zi frumoasă"],
+  ["raccontare", "a povesti"],
+  ["i genitori", "părinții"],
+  ["ho visto", "am văzut"],
+  ["ottimo", "excelent"],
+  ["ero", "eram"],
+  ["l'estate", "vara"],
+  // Întrebări
+  ["Chi?", "Cine? (ex: Chi è lui?)"],
+  ["Con chi?", "Cu cine? (ex: Con chi sei?)"],
+  ["Cosa? / Che cosa?", "Ce? (ex: Cosa fai oggi?)"],
+  ["Quando?", "Când? (ex: Quando andiamo?)"],
+  ["Da quando?", "De când? (ex: Da quando giochi a tennis?)"],
+  ["Dove?", "Unde? (ex: Dove sei?)"],
+  ["Di dove?", "De unde? originea (ex: Di dove sei?)"],
+  ["Perché?", "De ce? / Pentru că (ex: Perché impari l'italiano?)"],
+  ["Come?", "Cum? (ex: Come ti chiami?)"],
+  ["Quanto? / Quanti?", "Cât? / Câți? (ex: Quanti anni hai?)"],
+  ["Quale?", "Care? (ex: Quale sport preferisci?)"],
+  ["Vorrei vs Voglio", "Vorrei = Aș vrea (politicos) | Voglio = Vreau (ferm)"],
+  // Extra vocabular practic
+  ["l'università", "universitatea"],
+  ["studiare", "a studia"],
+  ["l'esame", "examenul"],
+  ["di solito", "de obicei"],
+  ["qualcosa", "ceva"],
+  ["nessuno", "nimeni"],
+  ["abbastanza", "destul de"],
+  ["il cibo", "mâncarea"],
+  ["il viaggio", "călătoria"]
+];
+
 const STORAGE_KEY = 'flashcards_data_v1';
 const SEED_FLAG_KEY = 'flashcards_seeded_v1';
 const SEED_FLAG_KEY_2 = 'flashcards_seeded_v2';
@@ -584,6 +645,7 @@ const SEED_FLAG_KEY_3 = 'flashcards_seeded_v3';
 const SEED_FLAG_KEY_NOTION = 'flashcards_seeded_notion_v1';
 const SEED_FLAG_KEY_RO = 'flashcards_seeded_ro_v1';
 const SEED_FLAG_KEY_VERBE = 'flashcards_seeded_v4';
+const SEED_FLAG_KEY_IT = 'flashcards_seeded_it_v1';
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
 
@@ -668,6 +730,7 @@ function loadData() {
   addDeckOnce(SEED_FLAG_KEY_NOTION, 'Germană', 'Cuvinte Notion', SEED_WORDS_NOTION);
   addDeckOnce(SEED_FLAG_KEY_VERBE, 'Germană', 'Verbe - conjugare (flashcards)', buildConjugationFlashcards());
   addDeckOnce(SEED_FLAG_KEY_RO, 'Vocabular avansat românesc', 'Cuvinte rare / neologisme', SEED_WORDS_RO);
+  addDeckOnce(SEED_FLAG_KEY_IT, 'Italiană', 'Vocabular și Expresii', SEED_WORDS_IT);
 
   if (didDedupe) saveData(data);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -717,7 +780,8 @@ function getVerbKey(front) {
 }
 function detectPOS(front) {
   const f = front.trim();
-  if (/^(der|die|das)\s/i.test(f)) return 'substantiv';
+  // detecteaza atat articole germane cat si italiene
+  if (/^(der|die|das|il|la|lo|l'|i|gli|le)\s/i.test(f) || /^(l')/i.test(f)) return 'substantiv';
   if (getVerbKey(f)) return 'verb';
   if (/\?$/.test(f) || f.split(' ').length > 3) return 'frază';
   if (f.split(' ').length > 1) return 'expresie';
@@ -917,7 +981,10 @@ function renderStudyCard() {
   posFront.textContent = pos; posBack.textContent = pos;
   posFront.classList.remove('hidden'); posBack.classList.remove('hidden');
 
-  let isNounMatch = /^(der|die|das)\s+(.+)$/i.exec(c.front);
+  let isNounMatch = /^(der|die|das|il|la|lo|l'|i|gli|le)\s+(.+)$/i.exec(c.front);
+  if (!isNounMatch && c.front.toLowerCase().startsWith("l'")) {
+     isNounMatch = ["", "l'", c.front.substring(2)];
+  }
   let usesArticleMode = false;
   let nounArticle = "";
 
@@ -945,13 +1012,28 @@ function renderStudyCard() {
 
   if (usesArticleMode && !modeTyping) {
       hintText.textContent = "Alege articolul corect (sau click pe card pt răspuns)";
-      interactiveArea.innerHTML = `
-          <div class="article-btns">
-              <button onclick="event.stopPropagation(); triggerArticleCheck('der', '${nounArticle}')">der</button>
-              <button onclick="event.stopPropagation(); triggerArticleCheck('die', '${nounArticle}')">die</button>
-              <button onclick="event.stopPropagation(); triggerArticleCheck('das', '${nounArticle}')">das</button>
-          </div>
-      `;
+      // Arata butoanele in functie de limba (germana sau italiana)
+      if (['der','die','das'].includes(nounArticle)) {
+        interactiveArea.innerHTML = `
+            <div class="article-btns">
+                <button onclick="event.stopPropagation(); triggerArticleCheck('der', '${nounArticle}')">der</button>
+                <button onclick="event.stopPropagation(); triggerArticleCheck('die', '${nounArticle}')">die</button>
+                <button onclick="event.stopPropagation(); triggerArticleCheck('das', '${nounArticle}')">das</button>
+            </div>
+        `;
+      } else {
+        interactiveArea.innerHTML = `
+            <div class="article-btns" style="flex-wrap: wrap;">
+                <button onclick="event.stopPropagation(); triggerArticleCheck('il', '${nounArticle}')">il</button>
+                <button onclick="event.stopPropagation(); triggerArticleCheck('la', '${nounArticle}')">la</button>
+                <button onclick="event.stopPropagation(); triggerArticleCheck('lo', '${nounArticle}')">lo</button>
+                <button onclick="event.stopPropagation(); triggerArticleCheck('l\\'', '${nounArticle}')">l'</button>
+                <button onclick="event.stopPropagation(); triggerArticleCheck('i', '${nounArticle}')">i</button>
+                <button onclick="event.stopPropagation(); triggerArticleCheck('gli', '${nounArticle}')">gli</button>
+                <button onclick="event.stopPropagation(); triggerArticleCheck('le', '${nounArticle}')">le</button>
+            </div>
+        `;
+      }
   } else if (modeTyping) {
       hintText.textContent = "Tastează răspunsul și apasă Enter";
       interactiveArea.innerHTML = `
